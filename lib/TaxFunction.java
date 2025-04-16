@@ -2,55 +2,59 @@ package lib;
 
 public class TaxFunction {
 
-    // Konstanta untuk penghitungan pajak
     private static final int BASIC_NONTAXABLE_INCOME = 54_000_000;
     private static final int MARRIAGE_ALLOWANCE = 4_500_000;
     private static final int CHILD_ALLOWANCE = 4_500_000;
     private static final int MAX_CHILDREN_COUNT = 3;
+    private static final int MAX_MONTHS_IN_YEAR = 12;
     private static final double TAX_RATE = 0.05;
 
-    private static final int MAX_MONTHS_IN_YEAR = 12;
+    public static int calculateTax(int monthlySalary, int otherMonthlyIncome, int monthsWorked,
+                                   int deductible, boolean isMarried, int numberOfChildren) {
 
-    /**
-     * Menghitung jumlah pajak penghasilan tahunan yang harus dibayar pegawai.
-     * 
-     * Pajak = 5% dari penghasilan bersih tahunan (gaji dan pendapatan lainnya dikalikan bulan kerja,
-     * dikurangi deductible) dikurangi penghasilan tidak kena pajak (PTKP).
-     * 
-     * PTKP:
-     * - Dasar: Rp 54.000.000
-     * - Tambahan jika menikah: Rp 4.500.000
-     * - Tambahan per anak (maks. 3): Rp 4.500.000 per anak
-     */
-    public static int calculateTax(int monthlySalary, int otherMonthlyIncome, int monthsWorked, int deductible,
-                                   boolean isMarried, int numberOfChildren) {
+        int validMonthsWorked = sanitizeMonthsWorked(monthsWorked);
+        int cappedChildren = capChildrenCount(numberOfChildren);
+        int annualIncome = calculateAnnualIncome(monthlySalary, otherMonthlyIncome, validMonthsWorked);
+        int netIncome = calculateNetIncome(annualIncome, deductible);
+        int nonTaxableIncome = calculateNonTaxableIncome(isMarried, cappedChildren);
+        int taxableIncome = calculateTaxableIncome(netIncome, nonTaxableIncome);
+        return calculateFinalTax(taxableIncome);
+    }
 
+    private static int sanitizeMonthsWorked(int monthsWorked) {
         if (monthsWorked > MAX_MONTHS_IN_YEAR) {
             System.err.println("Jumlah bulan bekerja tidak boleh lebih dari " + MAX_MONTHS_IN_YEAR + ".");
-            monthsWorked = MAX_MONTHS_IN_YEAR; // Default fallback
+            return MAX_MONTHS_IN_YEAR;
         }
+        return monthsWorked;
+    }
 
-        // Batasi jumlah anak maksimal sesuai peraturan
-        int cappedChildren = Math.min(numberOfChildren, MAX_CHILDREN_COUNT);
+    private static int capChildrenCount(int numberOfChildren) {
+        return Math.min(numberOfChildren, MAX_CHILDREN_COUNT);
+    }
 
-        // Hitung penghasilan tahunan dan penghasilan bersih
-        int annualIncome = (monthlySalary + otherMonthlyIncome) * monthsWorked;
-        int netIncome = annualIncome - deductible;
+    private static int calculateAnnualIncome(int salary, int otherIncome, int monthsWorked) {
+        return (salary + otherIncome) * monthsWorked;
+    }
 
-        // Hitung penghasilan tidak kena pajak (PTKP)
-        int nonTaxableIncome = BASIC_NONTAXABLE_INCOME;
+    private static int calculateNetIncome(int annualIncome, int deductible) {
+        return annualIncome - deductible;
+    }
+
+    private static int calculateNonTaxableIncome(boolean isMarried, int childrenCount) {
+        int nonTaxable = BASIC_NONTAXABLE_INCOME;
         if (isMarried) {
-            nonTaxableIncome += MARRIAGE_ALLOWANCE;
+            nonTaxable += MARRIAGE_ALLOWANCE;
         }
-        nonTaxableIncome += cappedChildren * CHILD_ALLOWANCE;
+        nonTaxable += childrenCount * CHILD_ALLOWANCE;
+        return nonTaxable;
+    }
 
-        // Hitung penghasilan kena pajak
-        int taxableIncome = netIncome - nonTaxableIncome;
-        if (taxableIncome < 0) {
-            taxableIncome = 0;
-        }
+    private static int calculateTaxableIncome(int netIncome, int nonTaxableIncome) {
+        return Math.max(netIncome - nonTaxableIncome, 0);
+    }
 
-        // Hitung pajak 5%
-        return (int) Math.round(TAX_RATE * taxableIncome);
+    private static int calculateFinalTax(int taxableIncome) {
+        return (int) Math.round(taxableIncome * TAX_RATE);
     }
 }
