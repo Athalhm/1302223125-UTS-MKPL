@@ -15,12 +15,14 @@ public class TaxFunction {
         int validMonthsWorked = sanitizeMonthsWorked(monthsWorked);
         int cappedChildren = Math.min(numberOfChildren, MAX_CHILDREN_COUNT);
 
+        // Langkah-langkah diperjelas lewat penamaan
         int annualIncome = calculateAnnualIncome(monthlySalary, otherMonthlyIncome, validMonthsWorked);
-        int netIncome = annualIncome - deductible;
+        int netIncome = calculateNetIncome(annualIncome, deductible);
         int nonTaxableIncome = calculateNonTaxableIncome(isMarried, cappedChildren);
-        int taxableIncome = Math.max(netIncome - nonTaxableIncome, 0);
+        int taxableIncome = calculateTaxableIncome(netIncome, nonTaxableIncome);
+        int tax = calculateFinalTax(taxableIncome);
 
-        return (int) Math.round(taxableIncome * TAX_RATE);
+        return tax;
     }
 
     private static int sanitizeMonthsWorked(int monthsWorked) {
@@ -35,6 +37,10 @@ public class TaxFunction {
         return (salary + otherIncome) * monthsWorked;
     }
 
+    private static int calculateNetIncome(int annualIncome, int deductible) {
+        return annualIncome - deductible;
+    }
+
     private static int calculateNonTaxableIncome(boolean isMarried, int childrenCount) {
         int nonTaxable = BASIC_NONTAXABLE_INCOME;
         if (isMarried) {
@@ -42,5 +48,13 @@ public class TaxFunction {
         }
         nonTaxable += childrenCount * CHILD_ALLOWANCE;
         return nonTaxable;
+    }
+
+    private static int calculateTaxableIncome(int netIncome, int nonTaxableIncome) {
+        return Math.max(netIncome - nonTaxableIncome, 0);
+    }
+
+    private static int calculateFinalTax(int taxableIncome) {
+        return (int) Math.round(taxableIncome * TAX_RATE);
     }
 }
