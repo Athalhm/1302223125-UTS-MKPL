@@ -6,6 +6,12 @@ import java.util.List;
 
 public class Employee {
 
+    private static final int GRADE_1_SALARY = 3_000_000;
+    private static final int GRADE_2_SALARY = 5_000_000;
+    private static final int GRADE_3_SALARY = 7_000_000;
+    private static final double FOREIGNER_SALARY_MULTIPLIER = 1.5;
+    private static final int MAX_MONTHS_IN_YEAR = 12;
+
     private String employeeId;
     private String firstName;
     private String lastName;
@@ -24,7 +30,6 @@ public class Employee {
     private Spouse spouse;
     private List<Child> children;
 
-    // Constructor private, diakses melalui EmployeeBuilder
     Employee(String employeeId, String firstName, String lastName, String idNumber,
              String address, LocalDate dateJoined, boolean isForeigner, Gender gender) {
         this.employeeId = employeeId;
@@ -38,55 +43,43 @@ public class Employee {
         this.children = new LinkedList<>();
     }
 
-    // Method untuk set gaji bulanan berdasarkan grade
     public void setMonthlySalary(int grade) {
-        // Tentukan gaji dasar berdasarkan grade
         int baseSalary = getBaseSalaryForGrade(grade);
-
-        // Jika pegawai adalah warga negara asing, gaji dasar diperbesar 1.5x
         if (isForeigner) {
-            baseSalary = (int) (baseSalary * 1.5);
+            baseSalary = (int) (baseSalary * FOREIGNER_SALARY_MULTIPLIER);
         }
-
-        // Set gaji bulanan
         monthlySalary = baseSalary;
     }
 
-    // Method untuk mendapatkan gaji dasar berdasarkan grade
     private int getBaseSalaryForGrade(int grade) {
         switch (grade) {
             case 1:
-                return 3_000_000;
+                return GRADE_1_SALARY;
             case 2:
-                return 5_000_000;
+                return GRADE_2_SALARY;
             case 3:
-                return 7_000_000;
+                return GRADE_3_SALARY;
             default:
                 throw new IllegalArgumentException("Invalid grade: " + grade);
         }
     }
 
-    // Set deductible tahunan
     public void setAnnualDeductible(int deductible) {
         this.annualDeductible = deductible;
     }
 
-    // Set pendapatan tambahan
     public void setAdditionalIncome(int income) {
         this.otherMonthlyIncome = income;
     }
 
-    // Menambahkan data pasangan
     public void setSpouse(String name, String idNumber) {
         this.spouse = new Spouse(name, idNumber);
     }
 
-    // Menambahkan data anak
     public void addChild(String name, String idNumber) {
         this.children.add(new Child(name, idNumber));
     }
 
-    // Menghitung pajak tahunan pegawai
     public int getAnnualIncomeTax() {
         int monthWorkingInYear;
         LocalDate today = LocalDate.now();
@@ -94,17 +87,17 @@ public class Employee {
         if (today.getYear() == dateJoined.getYear()) {
             monthWorkingInYear = today.getMonthValue() - dateJoined.getMonthValue();
         } else {
-            monthWorkingInYear = 12;
+            monthWorkingInYear = MAX_MONTHS_IN_YEAR;
         }
 
-        boolean isSingle = (spouse == null || spouse.isEmpty());
+        boolean isMarried = (spouse != null && !spouse.isEmpty());
 
         return TaxFunction.calculateTax(
             monthlySalary,
             otherMonthlyIncome,
             monthWorkingInYear,
             annualDeductible,
-            !isSingle,
+            isMarried,
             children.size()
         );
     }
